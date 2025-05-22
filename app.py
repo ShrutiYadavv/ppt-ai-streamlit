@@ -52,9 +52,8 @@ if st.button("Get Answer"):
                 best_slide = slides[best_idx]
 
                 st.success("✅ Best matching answer found:")
-                st.markdown(f"**Slide Content:**
-
-{best_slide}")
+                st.markdown(f"""**Slide Content:**  
+{best_slide}""")
                 st.markdown(f"**Confidence Score:** {confidence:.2f}")
 
         except Exception as e:
