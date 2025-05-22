@@ -1,11 +1,15 @@
 import streamlit as st
 from pptx import Presentation
 from sentence_transformers import SentenceTransformer, util
+from torch import device
 import os
 
-st.title("📊 AI Q&A from PowerPoint")
+st.set_page_config(page_title="PPT Q&A", layout="centered")
+st.title("📊 AI Q&A from PowerPoint Slides")
 
+# Load model and force CPU usage
 model = SentenceTransformer("all-mpnet-base-v2")
+model.to(device("cpu"))  # Force CPU for Streamlit Cloud
 
 def extract_slide_knowledge(pptx_path):
     prs = Presentation(pptx_path)
@@ -20,7 +24,7 @@ def extract_slide_knowledge(pptx_path):
             slide_knowledge.append(f"{title.strip()}\n{content.strip()}")
     return slide_knowledge
 
-# UI: Upload + Question
+# File upload and question input
 uploaded_file = st.file_uploader("📤 Upload a PowerPoint (.pptx) file", type=["pptx"])
 question = st.text_input("❓ Enter your question")
 
@@ -29,12 +33,12 @@ if st.button("Get Answer"):
         st.warning("Please upload a file and enter a question.")
     else:
         try:
-            # Save uploaded file locally
+            # Save file locally
             save_path = "uploaded_ppt.pptx"
             with open(save_path, "wb") as f:
                 f.write(uploaded_file.read())
 
-            # Extract slide text
+            # Extract text from slides
             slides = extract_slide_knowledge(save_path)
             if not slides:
                 st.error("No content found in slides.")
@@ -46,11 +50,11 @@ if st.button("Get Answer"):
                 confidence = scores[0][best_idx].item()
                 best_slide = slides[best_idx]
 
-                # Display result
+                # Show result
                 st.success("✅ Best matching answer found:")
                 st.markdown(f"""**Slide Content:**  
 {best_slide}""")
                 st.markdown(f"**Confidence Score:** {confidence:.2f}")
 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"❌ Error: {str(e)}")
