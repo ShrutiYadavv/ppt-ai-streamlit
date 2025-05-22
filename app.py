@@ -1,20 +1,11 @@
 import streamlit as st
 from pptx import Presentation
 from sentence_transformers import SentenceTransformer, util
-import gdown
-import re
 import os
 
-st.title("📊 AI Q&A from PowerPoint (Google Drive)")
+st.title("📊 AI Q&A from PowerPoint")
 
 model = SentenceTransformer("all-mpnet-base-v2")
-
-def download_file_from_drive(gdrive_url, save_path):
-    match = re.search(r'/d/([a-zA-Z0-9_-]+)', gdrive_url)
-    if not match:
-        raise ValueError("Invalid Google Drive URL")
-    file_id = match.group(1)
-    gdown.download(f"https://drive.google.com/uc?id={file_id}", save_path, quiet=False)
 
 def extract_slide_knowledge(pptx_path):
     prs = Presentation(pptx_path)
@@ -29,17 +20,21 @@ def extract_slide_knowledge(pptx_path):
             slide_knowledge.append(f"{title.strip()}\n{content.strip()}")
     return slide_knowledge
 
-# Streamlit input UI
-gdrive_url = st.text_input("🔗 Paste your Google Drive PPTX Link here")
+# UI: Upload + Question
+uploaded_file = st.file_uploader("📤 Upload a PowerPoint (.pptx) file", type=["pptx"])
 question = st.text_input("❓ Enter your question")
 
 if st.button("Get Answer"):
-    if not gdrive_url or not question:
-        st.warning("Please provide both a link and a question.")
+    if not uploaded_file or not question:
+        st.warning("Please upload a file and enter a question.")
     else:
         try:
-            save_path = "presentation.pptx"
-            download_file_from_drive(gdrive_url, save_path)
+            # Save uploaded file locally
+            save_path = "uploaded_ppt.pptx"
+            with open(save_path, "wb") as f:
+                f.write(uploaded_file.read())
+
+            # Extract slide text
             slides = extract_slide_knowledge(save_path)
             if not slides:
                 st.error("No content found in slides.")
@@ -51,6 +46,7 @@ if st.button("Get Answer"):
                 confidence = scores[0][best_idx].item()
                 best_slide = slides[best_idx]
 
+                # Display result
                 st.success("✅ Best matching answer found:")
                 st.markdown(f"""**Slide Content:**  
 {best_slide}""")
